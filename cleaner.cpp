@@ -5,11 +5,29 @@
 #include <opencv2/highgui/highgui.hpp>
 #include <opencv2/imgcodecs/imgcodecs.hpp>
 #include <opencv2/imgproc/imgproc.hpp>
+#include <opencv2/tracking.hpp>
 #include <sys/stat.h>
 #include <glob.h>
 
 using namespace std;
 using namespace cv;
+
+void renameAll(vector <string> paths, string dst, string pattern = "", string ext = ".jpg"){
+    for(int i = 0; i < paths.size(); ++i){
+        Mat image = imread(paths[i]);
+        imwrite(dst+"/"+pattern+to_string(i)+ext, image);
+    }
+}
+
+void cropAll(vector <string> paths, string dst){
+    Mat pivot = imread(paths[0]);
+    Rect2d roi = selectROI(pivot);
+    cout << roi << endl;
+    for(int i = 0; i < paths.size(); ++i){
+        Mat image = imread(paths[i]);
+        imwrite(dst+"/"+to_string(i)+".jpg", image(roi));
+    }
+}
 
 void resizeAll(vector <string> paths, int w, int h, string dst){
     Mat new_image;
@@ -80,7 +98,7 @@ int main()
     }
 
     //jpg images
-    src += "/*.JPG";
+    src += "/*.jpg";
 
     // Get all files in the src
     vector <string> paths = getImagePaths(src);
@@ -97,8 +115,13 @@ int main()
         cout << paths[i] << endl;
     }
 
-    cout << sameSize(images) << endl;
-    resizeAll(paths, 224, 224, dst);
+    //cout << sameSize(images) << endl;
+    //resizeAll(paths, 224, 224, dst);
 
-    return 0;
-}
+    if(!sameSize(images)){
+        cout << "All images must have the same dimensions. Please resize them.";
+        return -1;
+    }else{
+        cropAll(paths, dst);
+    }
+
